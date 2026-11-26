@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Show battery health trend from the weekly log.
+set -u
+
+CSV="${1:-${XDG_DATA_HOME:-$HOME/.local/share}/battery-health/health.csv}"
+
+if [ ! -s "$CSV" ]; then
+  echo "No log yet: $CSV" >&2
+  exit 1
+fi
+
+mapfile -t rows < <(tail -n +2 "$CSV")
+n=${#rows[@]}
+if [ "$n" -eq 0 ]; then
+  echo "Log has no data rows yet."
+  exit 0
+fi
+
+spark=(▁ ▂ ▃ ▄ ▅ ▆ ▇ █)
+
+# min / max health across rows
+min=1000; max=-1000
+for r in "${rows[@]}"; do
+  h=$(cut -d, -f3 <<<"$r")
+  [ -z "$h" ] && continue
+  awk -v a="$h" -v b="$min" 'BEGIN{exit !(a<b)}' && min=$h
+  awk -v a="$h" -v b="$max" 'BEGIN{exit !(a>b)}' && max=$h
+done
+[ "$min" = 1000 ] && min=0
+[ "$max" = -1000 ] && max=0
+
+echo "Battery health trend"
+echo "  log: $CSV"
+echo
+printf "  %-19s %6s %8s %8s  %s\n" "timestamp" "cap%" "health%" "delta" "trend"
+prev=""
+for i in "${!rows[@]}"; do
+  IFS=, read -r ts cap h now full design volt watt cycles status <<<"${rows[$i]}"
+  d="—"
+  if [ -n "$prev" ] && [ -n "$h" ]; then
+    d=$(awk -v a="$h" -v b="$prev" 'BEGIN{printf "%+.1f", a-b}')
+  fi
+  if [ -n "$h" ]; then
+    idx=$(awk -v h="$h" -v mn="$min" -v mx="$max" 'BEGIN{ if (mx<=mn) {print 3} else { i=int((h-mn)/(mx-mn)*7+0.5); if(i<0)i=0; if(i>7)i=7; print i } }')
+    sp=${spark[$idx]}
+    prev="$h"
+  else
+    sp="?"
+  fi
+  printf "  %-19s %6s %8s %8s  %s\n" "${ts:0:19}" "$cap" "${h:-—}" "$d" "$sp"
+done
+echo
+
+first_h=""; last_h=""; first_ts=""; last_ts=""
+for r in "${rows[@]}"; do
+  IFS=, read -r ts cap h rest <<<"$r"
+  if [ -n "$h" ]; then
+    [ -z "$first_h" ] && { first_h=$h; first_ts=$ts; }
+    last_h=$h; last_ts=$ts
+  fi
+done
+
+echo "Summary"
+if [ -n "$first_h" ] && [ -n "$last_h" ]; then
+  delta=$(awk -v a="$last_h" -v b="$first_h" 'BEGIN{printf "%+.1f", a-b}')
+  echo "  latest         : ${last_h}%  (${last_ts:0:10})"
+  echo "  first -> latest: ${first_h}% -> ${last_h}%  (delta ${delta} pts, ${n} row(s))"
+  s1=$(date -d "$first_ts" +%s 2>/dev/null || true)
+  s2=$(date -d "$last_ts" +%s 2>/dev/null || true)
+  if [ -n "$s1" ] && [ -n "$s2" ] && [ "$s2" -gt "$s1" ]; then
+    days=$(awk -v a="$s1" -v b="$s2" 'BEGIN{printf "%.1f", (b-a)/86400}')
+    rate=$(awk -v d="$delta" -v days="$days" 'BEGIN{printf "%+.2f", d/days*30.44}')
+    echo "  span           : ${days} days"
+    echo "  rate           : ${rate} pts/month"
+  else
+    echo "  span           : not enough time between rows yet"
+  fi
+else
+  echo "  no health values recorded"
+fi

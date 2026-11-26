@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly battery health logging
+
+[Timer]
+OnCalendar=Mon *-*-* 09:00:00
+Persistent=true
+Unit=battery-health.service
+
+[Install]
+WantedBy=timers.target

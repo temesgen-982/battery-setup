@@ -1,0 +1,5 @@
+# Battery health data (personal, machine-specific) — never commit
+health.csv
+*.csv
+*.log
+*.tmp

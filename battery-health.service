@@ -1,0 +1,9 @@
+[Unit]
+Description=Log battery health snapshot
+After=multi-user.target
+
+[Service]
+Type=oneshot
+User=temesgen
+Group=temesgen
+ExecStart=/home/temesgen/.local/bin/battery-health-log.sh
