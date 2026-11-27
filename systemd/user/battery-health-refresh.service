@@ -1,0 +1,6 @@
+[Unit]
+Description=Refresh i3status battery health line
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/battery-health-text.sh

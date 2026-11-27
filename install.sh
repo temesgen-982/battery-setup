@@ -18,6 +18,8 @@ install -m755 -o "$USER_NAME" -g "$USER_NAME" \
   "$SRC/battery-health-log.sh" "$HOME_DIR/.local/bin/battery-health-log.sh"
 install -m755 -o "$USER_NAME" -g "$USER_NAME" \
   "$SRC/battery-trend" "$HOME_DIR/.local/bin/battery-trend"
+install -m755 -o "$USER_NAME" -g "$USER_NAME" \
+  "$SRC/battery-health-text.sh" "$HOME_DIR/.local/bin/battery-health-text.sh"
 
 # 2) install the systemd units
 install -m644 "$SRC/battery-charge-threshold.service" /etc/systemd/system/
@@ -36,6 +38,9 @@ systemctl enable --now battery-health.timer
 if crontab -u "$USER_NAME" -l >/dev/null 2>&1; then
   crontab -u "$USER_NAME" -l | grep -v 'battery-health-log.sh' | crontab -u "$USER_NAME" - || true
 fi
+
+# refresh the i3status health line once, as the user
+runuser -u "$USER_NAME" -- "$HOME_DIR/.local/bin/battery-health-text.sh" || true
 
 echo
 echo "== applied threshold =="

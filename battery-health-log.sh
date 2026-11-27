@@ -35,7 +35,7 @@ printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
   "$(to_v voltage_now)" "$(to_w power_now)" \
   "$cycles" "$status" >> "$CSV"
 
-# Compact one-liner for i3status' read_file module: "health 58%"
-if [ -n "$health" ]; then
-  awk -v h="$health" 'BEGIN{printf "health %.0f%%\n", h}' > "$DIR/health.txt"
+# Refresh the compact i3status health line (single source of truth).
+if [ -x "$HOME/.local/bin/battery-health-text.sh" ]; then
+  "$HOME/.local/bin/battery-health-text.sh" || true
 fi

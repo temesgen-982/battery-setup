@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily battery health refresh
+
+[Timer]
+OnBootSec=2min
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+Unit=battery-health-refresh.service
+
+[Install]
+WantedBy=timers.target

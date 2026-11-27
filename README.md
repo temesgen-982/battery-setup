@@ -22,6 +22,9 @@ Everything here is plain shell + systemd units. No daemons, no packages.
 | `battery-health.timer` | Weekly schedule (`Mon 09:00`), `Persistent=true` |
 | `battery-health-log.sh` | Appends one row to the CSV |
 | `battery-trend` | Pretty-prints the CSV with deltas, sparkline, rate/month |
+| `battery-health-text.sh` | Writes the one-line `health.txt` for i3status |
+| `battery-health-refresh.service` / `.timer` | Daily **user** timer that refreshes `health.txt` |
+| `install-user.sh` | Installs/enables the daily refresh as a user timer (no sudo) |
 | `install.sh` | Installs scripts + units, enables them, removes legacy cron |
 | `README.md` | This file |
 
@@ -46,6 +49,12 @@ The installer:
 3. rewrites the logger unit to run as the invoking user
 4. enables + starts the threshold service and the weekly timer
 5. removes any old per-user cron entry for the logger (avoids duplicate rows)
+
+For the **daily** i3status health refresh (no root required):
+
+```bash
+./install-user.sh
+```
 
 ## Verify
 
@@ -117,6 +126,10 @@ read_file HEALTH {
 
 Result: `Bat: BAT 64.72% 05:00 | health 58%`
 
+`health.txt` is refreshed **daily** by `battery-health-refresh.timer` (a user timer,
+`OnBootSec=2min` + 08:00) and on every logger run, so the bar stays current without
+waiting a week.
+
 - `%percentage` = `energy_now / energy_full` — true charge, matches the charge threshold
 - `health` = `energy_full / design` — wear
 
@@ -182,6 +195,10 @@ design_wh, voltage_v, power_w, cycles, status
 - `energy_full_design` can be misreported by some firmware; health % is only as
   trustworthy as that value.
 - This slows wear; it does not reverse it. A worn pack stays worn.
+- **Low battery warning** is currently only i3status recoloring the text (`color_bad`,
+  i.e. red) below `low_threshold = 20`. There is no popup or sound. With
+  `last_full_capacity = true`, that 20 means 20% *real* charge. `dunst` and
+  `notify-send` are available if you later want a desktop notification.
 
 ## Uninstall
 
