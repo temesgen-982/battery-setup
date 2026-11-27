@@ -96,46 +96,11 @@ Summary
 
 `battery-trend` accepts an alternate CSV path as its first argument.
 
-## i3status integration
+## i3status / dunst
 
-`battery-health-log.sh` also writes a one-line `health.txt` next to the CSV:
-
-```
-~/.local/share/battery-health/health.txt   ->   "health 58%"
-```
-
-Use it as a separate `read_file` block so the battery block can show true charge
-(`last_full_capacity = true`) while health stays visible:
-
-```
-order += "battery 0"
-order += "read_file HEALTH"
-
-battery 0 {
-	format = "Bat: %status %percentage %remaining"
-	path = "/sys/class/power_supply/BAT0/uevent"
-	low_threshold = 20
-	last_full_capacity = true
-}
-
-read_file HEALTH {
-	path = "/home/<user>/.local/share/battery-health/health.txt"
-	format = "%content"
-}
-```
-
-Result: `Bat: BAT 64.72% 05:00 | health 58%`
-
-`health.txt` is refreshed **daily** by `battery-health-refresh.timer` (a user timer,
-`OnBootSec=2min` + 08:00) and on every logger run, so the bar stays current without
-waiting a week.
-
-- `%percentage` = `energy_now / energy_full` — true charge, matches the charge threshold
-- `health` = `energy_full / design` — wear
-
-Keep `low_threshold` meaningful by using `last_full_capacity = true`. With `false`
-the shown value is `charge × health`, so the low-battery warning fires early and the
-number disagrees with the 80% cap.
+The logger also writes `~/.local/share/battery-health/health.txt` (`health 58%`) for
+consumers such as a status bar. The i3status and dunst wiring lives in the **dotfiles**
+repo (`config/i3status/config`, `config/i3/scripts/`, `config/systemd/user/`), not here.
 
 ## Configuration
 
