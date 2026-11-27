@@ -87,6 +87,43 @@ Summary
 
 `battery-trend` accepts an alternate CSV path as its first argument.
 
+## i3status integration
+
+`battery-health-log.sh` also writes a one-line `health.txt` next to the CSV:
+
+```
+~/.local/share/battery-health/health.txt   ->   "health 58%"
+```
+
+Use it as a separate `read_file` block so the battery block can show true charge
+(`last_full_capacity = true`) while health stays visible:
+
+```
+order += "battery 0"
+order += "read_file HEALTH"
+
+battery 0 {
+	format = "Bat: %status %percentage %remaining"
+	path = "/sys/class/power_supply/BAT0/uevent"
+	low_threshold = 20
+	last_full_capacity = true
+}
+
+read_file HEALTH {
+	path = "/home/<user>/.local/share/battery-health/health.txt"
+	format = "%content"
+}
+```
+
+Result: `Bat: BAT 64.72% 05:00 | health 58%`
+
+- `%percentage` = `energy_now / energy_full` — true charge, matches the charge threshold
+- `health` = `energy_full / design` — wear
+
+Keep `low_threshold` meaningful by using `last_full_capacity = true`. With `false`
+the shown value is `charge × health`, so the low-battery warning fires early and the
+number disagrees with the 80% cap.
+
 ## Configuration
 
 ### Change the cap permanently

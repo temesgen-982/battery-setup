@@ -34,3 +34,8 @@ printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
   "$(to_wh energy_now)" "$(to_wh energy_full)" "$(to_wh energy_full_design)" \
   "$(to_v voltage_now)" "$(to_w power_now)" \
   "$cycles" "$status" >> "$CSV"
+
+# Compact one-liner for i3status' read_file module: "health 58%"
+if [ -n "$health" ]; then
+  awk -v h="$health" 'BEGIN{printf "health %.0f%%\n", h}' > "$DIR/health.txt"
+fi
